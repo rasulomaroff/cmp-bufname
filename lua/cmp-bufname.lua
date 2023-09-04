@@ -23,6 +23,9 @@ function source:complete(params, callback)
 
         if filename ~= '' then
             callback { { label = filename } }
+        else
+            -- callback function must always be called, according to nvim-cmp documenation
+            callback()
         end
 
         return
