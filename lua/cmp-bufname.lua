@@ -33,6 +33,7 @@ function source:complete(params, callback)
 
     local bufs = vim.api.nvim_list_bufs()
 
+    -- table of filenames that already been set to prevent duplicating
     local filenames_set = {}
 
     local filenames_response = {}
@@ -44,6 +45,7 @@ function source:complete(params, callback)
 
         if filename ~= '' and not filenames_set[filename] then
             table.insert(filenames_response, { label = filename })
+            filenames_set[filename] = true
         end
     end
 
