@@ -1,8 +1,8 @@
 local source = {}
 
-local function extract_filename(path)
+local function get_filenames(path, extractor)
     if path == '' or not path then
-        return ''
+        return {}
     end
 
     -- extracting the last part of a path
@@ -10,46 +10,52 @@ local function extract_filename(path)
     local filename = path_parts[#path_parts]
 
     if not filename or filename == '' then
-        return ''
+        return {}
     end
 
     -- splitting it with '.' to drop an extension and scopes (filename.scope.extension)
-    return filename:match '[^.]*'
+    return extractor and extractor(filename, path) or { filename:match '[^.]*' }
 end
 
 function source:complete(params, callback)
-    if params.option and params.option.current_buf_only then
-        local filename = extract_filename(vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf()))
+    local opts = params.option or {}
 
-        if filename ~= '' then
-            callback { { label = filename } }
-        else
-            -- callback function must always be called, according to nvim-cmp documenation
-            callback()
+    if opts.current_buf_only then
+        local filenames = get_filenames(vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf()), opts.extractor)
+
+        local entries_set = {}
+        local entries = {}
+
+        for _, filename in ipairs(filenames) do
+            if filename ~= '' and not entries_set[filename] then
+                table.insert(entries, { label = filename })
+                entries_set[filename] = true
+            end
         end
+
+        callback(entries)
 
         return
     end
 
-    local bufs = vim.api.nvim_list_bufs()
+    local bufs = opts.bufs and opts.bufs() or vim.api.nvim_list_bufs()
 
     -- table of filenames that already been set to prevent duplicating
-    local filenames_set = {}
-
-    local filenames_response = {}
+    local entries_set = {}
+    local entries = {}
 
     for _, buf_id in ipairs(bufs) do
-        local filepath = vim.api.nvim_buf_get_name(buf_id)
+        local filenames = get_filenames(vim.api.nvim_buf_get_name(buf_id), opts.extractor)
 
-        local filename = extract_filename(filepath)
-
-        if filename ~= '' and not filenames_set[filename] then
-            table.insert(filenames_response, { label = filename })
-            filenames_set[filename] = true
+        for _, filename in ipairs(filenames) do
+            if filename ~= '' and not entries_set[filename] then
+                table.insert(entries, { label = filename })
+                entries_set[filename] = true
+            end
         end
     end
 
-    callback(filenames_response)
+    callback(entries)
 end
 
 function source.new()

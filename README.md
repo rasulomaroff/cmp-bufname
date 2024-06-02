@@ -14,7 +14,7 @@ require('cmp').setup {
 
 ## Configuration
 
-By default, `cmp-bufname` will use file names from all opened buffers. If you only want use a file name of a current buffer, then use the following config:
+The following is a default configuration:
 
 ```lua
 require('cmp').setup {
@@ -22,7 +22,20 @@ require('cmp').setup {
     {
       name = 'bufname',
       option = {
-        current_buf_only = true
+        -- use only current buffer for filename exractions
+        current_buf_only = false,
+
+        -- allows to configure what buffers to extract a filename from
+        bufs = function()
+          return vim.api.nvim_list_bufs()
+        end,
+
+        -- configure which entries you want to include in your completion:
+        -- - you have to return a table of entries
+        -- - empty string means skip that particular entry
+        extractor = function(filename, full_path)
+          return { filename:match '[^.]*'}
+        end
       }
     }
   }
